@@ -66,6 +66,30 @@ static PyObject *pymach_vm_write(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
+static PyObject *pymach_vm_region_recurse(PyObject *self, PyObject *args) {
+  mach_port_name_t task;
+  vm_map_offset_t vmoffset;
+  vm_map_size_t vmsize;
+  uint32_t nesting_depth = 0;
+  struct vm_region_submap_info_64 vbr;
+  mach_msg_type_number_t vbrcount = 16;
+  kern_return_t ret;
+
+  if (!PyArg_ParseTuple(args, "i", &task)) return NULL;
+
+  ret = mach_vm_region_recurse( task, 
+                               &vmoffset, 
+                               &vmsize, 
+                               &nesting_depth, 
+                               (vm_region_recurse_info_t)&vbr, 
+                               &vbrcount
+                             );
+  if (ret) mach_error(ret);
+  PyObject *val = Py_BuildValue("KKIii", vmoffset, vmsize, nesting_depth, vbr, vbrcount);
+  return val;
+
+}
+
 static PyMethodDef MachMethods[] = {
   {"task_self", pymach_task_self, METH_VARARGS,
    "Get a Mach port for the current task"},
@@ -77,6 +101,8 @@ static PyMethodDef MachMethods[] = {
    "Read memory from another task"},
   {"vm_write", pymach_vm_write, METH_VARARGS,
    "Write memory to another task"},
+  {"vm_region_recurse", pymach_vm_region_recurse, METH_VARARGS,
+   "Get info about memory region"},
   {NULL, NULL, 0, NULL}
 };
 
