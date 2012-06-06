@@ -2,3 +2,5 @@ build
 mach.so
 build/*
 app.py
+xnu
+xnu/*
